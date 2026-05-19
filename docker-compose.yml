@@ -1,0 +1,70 @@
+name: ndm-xff-stand
+
+services:
+  app:
+    build:
+      context: ./app
+    container_name: ndm-app
+    networks:
+      proxynet:
+        ipv4_address: 10.10.0.20
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://127.0.0.1:8000/health').status == 200 else sys.exit(1)"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  nginx1:
+    image: nginx:1.27-alpine
+    container_name: ndm-nginx1
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx1.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8081:80"
+    networks:
+      proxynet:
+        ipv4_address: 10.10.0.11
+    restart: unless-stopped
+
+  nginx2:
+    image: nginx:1.27-alpine
+    container_name: ndm-nginx2
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx2.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8082:80"
+    networks:
+      proxynet:
+        ipv4_address: 10.10.0.12
+    restart: unless-stopped
+
+  nginx3:
+    image: nginx:1.27-alpine
+    container_name: ndm-nginx3
+    depends_on:
+      app:
+        condition: service_healthy
+    volumes:
+      - ./nginx/nginx3.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8083:80"
+    networks:
+      proxynet:
+        ipv4_address: 10.10.0.13
+    restart: unless-stopped
+
+networks:
+  proxynet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.10.0.0/24
+          gateway: 10.10.0.1
